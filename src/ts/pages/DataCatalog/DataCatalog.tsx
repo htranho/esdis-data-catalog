@@ -50,15 +50,37 @@ import { SUBMIT_DELAY_MS } from '../../constants/submitDelay'
 
 interface AutoSaveFormikProps {
   isLoading: boolean;
-  debouncedSubmit: () => void;
 }
 
-const AutoSaveFormik: React.FC<AutoSaveFormikProps> = ({ isLoading, debouncedSubmit }) => {
+const AutoSaveFormik: React.FC<AutoSaveFormikProps> = ({ isLoading }) => {
   const formik = useFormikContext()
+  // Const debouncedSubmit = React.useCallback(() => {
+  //   // Const submit = debounce(() => {
+  //   //   const debounceHandler = setTimeout(() => {
+  //   //     setDebouncedSearchValue(formik.values.keyword)
+  //   //   }, SUBMIT_DELAY_MS)
+
+  //   const submit = setTimeout(() => {
+  //     formik.submitForm()
+  //   }, SUBMIT_DELAY_MS)
+
+  //   console.log('calling debouncedSubmit')
+  // }, [formik])
 
   React.useEffect(() => {
-    if (!isLoading && formik.dirty) debouncedSubmit()
-  }, [isLoading, debouncedSubmit, formik.values])
+    // If (!isLoading && formik.dirty)
+    if (!isLoading && formik.dirty) {
+      console.log('THIS IS CALLING BECAUSE FORMIK IS DIRTY')
+      // setTimeout(() => {
+      //   formik.submitForm()
+      // }, SUBMIT_DELAY_MS)
+      // Const debouncedSubmit = debounce(() => formik.submitForm(), SUBMIT_DELAY_MS)
+
+      // debouncedSubmit()
+      const debouncedSubmit = debounce(formik.submitForm, SUBMIT_DELAY_MS)
+      debouncedSubmit()
+    }
+  }, [isLoading, formik.values])
 
   return null
 }
@@ -111,8 +133,10 @@ const DataCatalog: React.FC = () => {
     page_size: currentPageSize = getConfig('defaultPageSize'),
     sort_key: currentSortKey = defaultSortKey
   } = parsedQueryString
+  console.log('🚀 ~ file: DataCatalog.tsx:116 ~ parsedQueryString:', parsedQueryString)
 
   const [collectionSearchParams, setCollectionSearchParams] = useState(parsedQueryString)
+  console.log('🚀 ~ file: DataCatalog.tsx:119 ~ collectionSearchParams:', collectionSearchParams)
 
   const [data, setData] = useState<DataState>({
     facets: Object,
@@ -143,7 +167,9 @@ const DataCatalog: React.FC = () => {
           ...collectionSearchParams,
           keyword: getKeywordWithWildcard(collectionSearchParams.keyword as string)
         }
+
         const response: QueryResult = await
+        // QueryFacetedCollections(transformedParams as Params)
         queryFacetedCollections(transformedParams as Params)
 
         const { facetData, data: responseData } = response
@@ -195,6 +221,10 @@ const DataCatalog: React.FC = () => {
     })
   }
 
+  /**
+   * Sets the query string
+   * @param {string} str Query string to be set
+   */
   const setQueryString = (str: string) => {
     updateSearchParams(parseCollectionsQuery(str.replace(/(page_num=)\d+/, '$11')))
   }
@@ -221,6 +251,10 @@ const DataCatalog: React.FC = () => {
     hasChildren: false
   }
 
+  /**
+   * Sets the query page
+   * @param {number} pageNumber Page number to be set
+   */
   const setQueryPage = (pageNumber: number) => {
     // Combines current search params and selected page number
     const updatedSearchParam = {
@@ -265,6 +299,37 @@ const DataCatalog: React.FC = () => {
     updateSearchParams(parseCollectionsQuery(query))
   }
 
+  // Const debouncedSubmit = useCallback(
+  //   debounce((searchValues: Params) => {
+  //     const searchParams = pickBy(searchValues, identity)
+  //     delete searchParams.page_num
+  //     updateSearchParams(searchParams)
+  //   }, SUBMIT_DELAY_MS),
+  //   [updateSearchParams]
+  // )
+
+  // const debouncedChangeHandler = useCallback(
+  //   debounce((handleChange, e) => {
+  //     handleChange(e) // Let Formik handle the change
+  //     console.log('calling debouncedChangeHandler')
+  //   }, SUBMIT_DELAY_MS),
+  //   [] // Debounce only created once
+  // )
+
+  // UseEffect(() => () => {
+  //   debouncedSubmit.cancel()
+  // }, [debouncedSubmit])
+
+  // const handleChangeWithExtras = (e) => {
+  //   const formik = useFormikContext()
+
+  //   // Your extra logic first
+  //   console.log('Field changed:', e.target.name, '→', e.target.value)
+
+  //   // Then call Formik's original handleChange
+  //   formik.handleChange(e)
+  // }
+
   return (
     <div className="data-catalog-wrapper">
       <Formik
@@ -281,18 +346,18 @@ const DataCatalog: React.FC = () => {
             handleSubmit: formHandleSubmit,
             setFieldValue
           }) => {
-            const debouncedSubmit = useCallback(
-              debounce((searchValues: Params) => {
-                const searchParams = pickBy(searchValues, identity)
-                delete searchParams.page_num
-                updateSearchParams(searchParams)
-              }, SUBMIT_DELAY_MS),
-              [updateSearchParams]
-            )
+            // Const debouncedSubmit = useCallback(
+            //   debounce((searchValues: Params) => {
+            //     const searchParams = pickBy(searchValues, identity)
+            //     delete searchParams.page_num
+            //     updateSearchParams(searchParams)
+            //   }, SUBMIT_DELAY_MS),
+            //   [updateSearchParams]
+            // )
 
-            useEffect(() => () => {
-              debouncedSubmit.cancel()
-            }, [debouncedSubmit])
+            // useEffect(() => () => {
+            //   debouncedSubmit.cancel()
+            // }, [debouncedSubmit])
 
             const handleKeywordChange = (
               e: React.ChangeEvent<
@@ -301,10 +366,10 @@ const DataCatalog: React.FC = () => {
             ) => {
               const { name, value } = e.target
               setFieldValue(name, value)
-              debouncedSubmit({
-                ...values,
-                [name]: getKeywordWithWildcard(value)
-              })
+              // DebouncedSubmit({
+              //   ...values,
+              //   [name]: getKeywordWithWildcard(value)
+              // })
             }
 
             return (
@@ -415,7 +480,6 @@ const DataCatalog: React.FC = () => {
                 </div>
                 <AutoSaveFormik
                   isLoading={loading}
-                  debouncedSubmit={() => debouncedSubmit(values)}
                 />
               </>
             )
